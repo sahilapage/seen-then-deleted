@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<style>img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Seen, Then Deleted</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="4D occupancy world models erase the agents they cannot forecast: a diagnosis, its cause, a measure that cannot be gamed, and a training-free fix.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one 960px reading column on white, fixed mono section index at left, figures break out to a wider band.
+   Deliberately single light look (same family as the authors' other project page); every colour is a token. */
+:root {
+  --page: #ffffff;
+  --ink: #1b1b1b;
+  --ink-2: #444444;
+  --ink-3: #737373;
+  --caption: #3a3025;
+  --rule: #e6e2d8;
+  --grid: #ececec;
+  --well: #f6f6f4;
+  --pill: #ede0c5;
+  --model: #3d3a35;     /* the frozen world model */
+  --layer: #d9480f;     /* permanence layer, detector motion (as in the renders) */
+  --layer-soft: #f6d6c5;
+  --lost: #e03131;      /* lost footprint (as in the renders) */
+  --kept: #2f9e44;      /* kept footprint (as in the renders) */
+  --stone: #c9c3b6;     /* controls, uninformative maps */
+  --causal: #2c5b94;    /* focus ring */
+  --serif: 'Times New Roman', Times, Tinos, 'Liberation Serif', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: Helvetica, 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: light;
+}
+html { background: var(--page); scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--page); color: var(--ink); font-family: var(--serif); padding-left: max(30px, env(safe-area-inset-left, 0px)); padding-right: max(30px, env(safe-area-inset-right, 0px)); padding-block: 60px; margin: 0; }
+.main { max-width: 960px; margin: 0 auto; }
+a { color: var(--ink); }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--causal); outline-offset: 2px; }
+
+.side-nav { position: fixed; top: 40px; left: calc(32px + env(safe-area-inset-left, 0px)); font-family: var(--mono); font-size: 13px; z-index: 10; }
+.side-nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.side-nav a { color: var(--ink-3); text-decoration: none; font-weight: 300; border-left: 1px solid transparent; padding-left: 10px; transition: color .2s, border-color .2s; display: block; }
+.side-nav a:hover, .side-nav a.active { color: var(--ink); border-left-color: var(--ink); font-weight: 400; }
+@media (max-width: 1280px) { .side-nav { display: none; } }
+
+.hero-text { font-size: 52px; font-weight: 700; letter-spacing: -1px; line-height: 1.12; margin: 0 0 28px; text-wrap: balance; }
+.hero-text .sub { display: block; font-weight: 400; font-size: .62em; letter-spacing: -.4px; margin-top: 10px; color: var(--ink-2); }
+.authors { font-family: var(--sans); line-height: 1.6; margin: 0 0 36px; }
+.authors p { margin: 0; }
+.author-list { font-size: 15px; color: var(--ink); margin-bottom: 4px !important; }
+.author-list .name { font-weight: 700; white-space: nowrap; }
+.authors sup { font-size: 10px; font-weight: 400; color: var(--ink-3); margin-left: 1px; }
+.affiliation-list { font-size: 13px; color: var(--ink-2); }
+
+/* synchronized video pairs and triples */
+.vgrid { display: grid; gap: 2px; background: #000; position: relative; }
+.vgrid.n2 { grid-template-columns: 1fr 1fr; }
+.vgrid.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .vgrid.n3 { grid-template-columns: 1fr; } }
+.stage { position: relative; line-height: 0; background: #000; overflow: hidden; min-width: 0; }
+.stage video { width: 100%; aspect-ratio: 604 / 332; object-fit: cover; display: block; max-width: 100%; }
+.n3 .stage video { aspect-ratio: 376 / 208; }
+.badge { position: absolute; top: 8px; left: 8px; font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: .5px; color: #fff; background: rgba(0,0,0,.62); padding: 3px 7px; border-radius: 3px; text-transform: uppercase; line-height: 1.2; pointer-events: none; }
+
+.controls { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px; display: flex; align-items: center; gap: 12px; background: linear-gradient(to top, rgba(0,0,0,.6), rgba(0,0,0,0)); font-family: var(--mono); color: #fff; opacity: 0; transition: opacity .2s; }
+.vgrid:hover .controls, .controls:focus-within { opacity: 1; }
+@media (hover: none) { .controls { opacity: 1; } }
+.cbtn { background: none; border: 0; color: #fff; cursor: pointer; padding: 5px 7px; border-radius: 4px; font: 500 11px var(--mono); letter-spacing: .5px; }
+.cbtn:hover { background: rgba(255,255,255,.15); }
+.progress { flex: 1; height: 3px; background: rgba(255,255,255,.25); border-radius: 2px; position: relative; }
+.progress i { position: absolute; left: 0; top: 0; bottom: 0; background: #fff; border-radius: 2px; width: 0; }
+.road { margin-top: 2px; background: var(--well); }
+.road svg { display: block; width: 100%; height: auto; }
+.teaser-caption { font-family: var(--mono); font-size: 13px; line-height: 1.5; color: var(--ink-2); text-align: center; margin: 10px auto 0; max-width: 860px; }
+
+.link-row { font-family: var(--sans); font-size: 16px; text-align: center; margin: 26px 0 44px; color: var(--ink-3); display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 36px; }
+.link-row .soon { border-bottom: 1px solid var(--stone); padding-bottom: 2px; white-space: nowrap; }
+.link-row .soon em { font-style: normal; font-family: var(--mono); font-size: 12px; margin-left: 6px; }
+
+/* overview strip */
+.overview { margin: 0 0 50px; }
+.ov-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.ov-cell { margin: 0; display: flex; flex-direction: column; min-width: 0; }
+.ov-head { font-size: 20px; font-weight: 700; text-align: center; margin: 0 0 10px; line-height: 1.2; }
+.ov-visual { width: 100%; aspect-ratio: 4 / 3; background: var(--well); overflow: hidden; max-width: 100%; position: relative; }
+.ov-visual svg { width: 100%; height: 100%; display: block; }
+.ov-cell figcaption { font-family: var(--mono); font-size: 13px; line-height: 1.45; color: var(--ink-2); margin-top: 12px; text-align: center; }
+.caption { font-style: italic; font-size: 16px; line-height: 1.55; color: var(--caption); margin: 22px auto 0; max-width: 800px; text-align: center; }
+.caption strong { font-style: normal; font-weight: 700; color: var(--ink); }
+
+.tagline { margin: 72px 0 26px; font-size: 44px; font-weight: 700; letter-spacing: -.6px; line-height: 1.1; text-wrap: balance; scroll-margin-top: 24px; }
+.subtagline { font-family: var(--mono); font-size: 20px; font-weight: 500; margin: 40px 0 14px; letter-spacing: .2px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.pill { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .5px; background: var(--pill); padding: 3px 10px; border-radius: 999px; line-height: 1.4; }
+.section { font-size: 20px; line-height: 1.7; margin: 0 0 30px; }
+.section p { margin: 0 0 18px; }
+.section p:last-child { margin-bottom: 0; }
+.eq { font-family: var(--mono); font-size: .8em; white-space: nowrap; }
+
+.fig { margin: 0 0 44px; padding: 0; }
+.fig > figcaption { max-width: 860px; margin-left: auto; margin-right: auto; font-style: italic; font-size: 16px; line-height: 1.5; color: var(--caption); margin-top: 14px; text-align: center; }
+.fig > figcaption strong { font-style: normal; font-weight: 700; color: var(--ink); }
+.chart { width: 100%; min-width: 0; }
+.chart svg { display: block; overflow: visible; }
+.wide { width: min(1240px, calc(100vw - 380px)); position: relative; left: 50%; transform: translateX(-50%); }
+@media (max-width: 1280px) { .wide { width: 100%; left: auto; transform: none; } }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; gap: 34px; } }
+.two > * { min-width: 0; }
+.chart-title { font-family: var(--mono); font-size: 13px; color: var(--ink-2); text-align: center; margin: 0 0 6px; }
+
+.tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0 0 12px; }
+.tbtn { font: 500 12px var(--mono); letter-spacing: .4px; color: var(--ink); background: var(--page); border: 1px solid var(--stone); padding: 5px 12px; border-radius: 3px; cursor: pointer; }
+.tbtn:hover { border-color: var(--ink); }
+.tbtn[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+.scene-pick { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; }
+@media (max-width: 760px) { .scene-pick { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.scene-pick .tbtn { padding: 5px 4px; font-size: 11px; white-space: nowrap; }
+.readout { font-family: var(--mono); font-size: 13px; color: var(--ink-2); text-align: center; margin: 10px 0 0; line-height: 1.6; }
+.readout b { color: var(--ink); font-weight: 500; }
+
+.slider-row { display: flex; align-items: center; gap: 14px; justify-content: center; font-family: var(--mono); font-size: 13px; color: var(--ink-2); margin: 0 0 8px; flex-wrap: wrap; }
+.slider-row input[type="range"] { width: min(360px, 70vw); accent-color: var(--ink); }
+.slider-row output { font-weight: 500; color: var(--ink); min-width: 3.5em; font-variant-numeric: tabular-nums; }
+
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px; font-family: var(--mono); font-size: 12px; color: var(--ink-2); margin: 0 0 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 11px; height: 11px; display: inline-block; }
+.sw.model { background: var(--model); } .sw.layer { background: var(--layer); } .sw.stone { background: var(--stone); } .sw.kept { background: none; border: 2px solid var(--kept); width: 9px; height: 9px; } .sw.lost { background: none; border: 2px dashed var(--lost); width: 9px; height: 9px; }
+.ln { width: 18px; height: 0; display: inline-block; border-top: 2px solid var(--ink); }
+
+.ln.dash { border-top-style: dashed; }
+
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule); margin: 0 0 40px; }
+.fact { padding: 18px 18px 20px 0; min-width: 0; }
+.fact + .fact { padding-left: 18px; border-left: 1px solid var(--rule); }
+.fact b { display: block; font-family: var(--mono); font-weight: 500; font-size: 30px; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.fact span { display: block; font-size: 16px; line-height: 1.45; color: var(--ink-2); margin-top: 6px; }
+@media (max-width: 700px) { .facts { grid-template-columns: 1fr; } .fact + .fact { padding-left: 0; border-left: 0; border-top: 1px solid var(--rule); } }
+
+.takeaways { list-style: none; counter-reset: t; padding: 0; margin: 26px 0 0; display: grid; gap: 14px; }
+.takeaways li { counter-increment: t; display: grid; grid-template-columns: 46px 1fr; font-size: 19px; line-height: 1.6; }
+.takeaways li::before { content: "(" counter(t) ")"; font-family: var(--mono); font-size: 13px; color: var(--ink-3); padding-top: 4px; }
+
+.spec { display: grid; grid-template-columns: 170px minmax(0, 1fr); border-top: 1px solid var(--ink); margin: 0 0 30px; }
+.spec dt, .spec dd { padding: 13px 0; border-bottom: 1px solid var(--rule); margin: 0; }
+.spec dt { font: 500 12px var(--mono); letter-spacing: .6px; text-transform: uppercase; color: var(--ink-3); padding-top: 17px; }
+.spec dd { font-size: 18px; line-height: 1.55; min-width: 0; }
+@media (max-width: 600px) { .spec { grid-template-columns: 1fr; } .spec dt { border-bottom: 0; padding-bottom: 0; } }
+.counts { font-family: var(--mono); font-size: 14px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0 0 30px; }
+.counts b { color: var(--ink); font-weight: 500; }
+
+.bib { position: relative; }
+.bib pre { font: 13px/1.6 var(--mono); background: var(--well); color: var(--ink); padding: 18px 20px; margin: 0; overflow-x: auto; border-left: 2px solid var(--ink); }
+.bib .tbtn { position: absolute; top: 10px; right: 10px; }
+
+.end { margin: 70px 0 10px; padding-top: 24px; border-top: 1px solid var(--rule); text-align: center; }
+.end p { font-style: italic; font-size: 16px; color: #6e6555; margin: 0; }
+.end small { display: block; font-family: var(--mono); font-size: 12px; color: var(--ink-3); margin-top: 8px; letter-spacing: .3px; }
+
+#tip { position: fixed; z-index: 50; pointer-events: none; font: 12px/1.45 var(--mono); color: #fff; background: rgba(20,20,20,.92); padding: 7px 10px; border-radius: 3px; max-width: 280px; opacity: 0; transition: opacity .08s; }
+#tip b { font-weight: 600; }
+
+@media (max-width: 900px) {
+  body { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); padding-block: 40px; }
+  .hero-text { font-size: 40px; letter-spacing: -.5px; }
+  .tagline { font-size: 34px; }
+  .section { font-size: 18px; }
+  .subtagline { font-size: 17px; }
+  .ov-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+}
+@media (max-width: 600px) {
+  body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px; }
+  .hero-text { font-size: 30px; line-height: 1.18; }
+  .tagline { font-size: 28px; margin-top: 56px; }
+  .section { font-size: 17px; line-height: 1.65; }
+  .subtagline { font-size: 15px; }
+  .ov-grid { gap: 12px; }
+  .ov-head { font-size: 17px; }
+  .ov-cell figcaption { font-size: 12px; }
+  .caption, .fig > figcaption { font-size: 15px; }
+  .takeaways li { font-size: 17px; grid-template-columns: 34px 1fr; }
+}
+
+/* occupancy viewer */
+.occ { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 700px) { .occ { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.occ figure { margin: 0; min-width: 0; }
+.occ .frame { position: relative; width: 100%; aspect-ratio: 480 / 344; max-width: 100%; background: var(--page); }
+.occ .frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .25s; }
+.occ .frame img.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .occ .frame img { transition: none; } }
+.occ figcaption { font: 500 12px var(--mono); letter-spacing: .5px; text-transform: uppercase; text-align: center; color: var(--ink); margin-bottom: 4px; }
+.occ figcaption span { display: block; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-3); font-size: 11px; }
+.timeline { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 14px 0 8px; }
+.timeline .tbtn.layerbtn[aria-pressed="true"] { background: var(--layer); border-color: var(--layer); }
+.occ-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; font: 12px var(--mono); color: var(--ink-2); margin: 6px 0 0; }
+.occ-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.occ-legend i { width: 11px; height: 11px; display: inline-block; }
+.frame-note { font-size: 16px; line-height: 1.55; font-style: italic; color: var(--caption); max-width: 860px; margin: 12px auto 0; text-align: center; min-height: 3.1em; }
+table.check { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.45; }
+table.check th { font: 500 12px var(--mono); letter-spacing: .6px; text-transform: uppercase; color: var(--ink-3); text-align: left; padding: 0 14px 10px 0; border-bottom: 1px solid var(--ink); }
+table.check td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.check td:nth-child(1) { font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+table.check td:nth-child(3) { font-family: var(--mono); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.check td:nth-child(4) { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+table.check tr.hl td { background: var(--well); }
+table.check tr.hl td:nth-child(4) { color: var(--ink); font-weight: 500; }
+.table-wrap { overflow-x: auto; margin: 0 0 18px; }
+</style>
+</head>
+<body>
+<nav class="side-nav" aria-label="Sections">
+  <ul>
+    <li><a href="#abstract">Abstract</a></li>
+    <li><a href="#diagnosis">Diagnosis</a></li>
+    <li><a href="#cause">Cause</a></li>
+    <li><a href="#measure">Measure</a></li>
+    <li><a href="#fix">Fix</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#registered">Registered tests</a></li>
+    <li><a href="#method">Method</a></li>
+    <li><a href="#citation">Citation</a></li>
+  </ul>
+</nav>
+
+<div class="main">
+  <h1 class="hero-text">Seen, Then Deleted<span class="sub">4D occupancy world models erase the agents they cannot forecast</span></h1>
+  <div class="authors">
+    <p class="author-list"><span class="name">Sahil Apage<sup>1</sup></span>, <span class="name">Medhansh Abhilash<sup>1</sup></span>, <span class="name">Kartik Tagore<sup>1</sup></span></p>
+    <p class="affiliation-list"><sup>1</sup>Veermata Jijabai Technological Institute (VJTI), Mumbai</p>
+  </div>
+
+  <figure class="fig wide" style="margin-bottom:10px">
+    <div class="occ" id="occ"></div>
+    <div class="timeline" id="timeline" role="group" aria-label="Forecast horizon"></div>
+    <div class="occ-legend" aria-label="Legend">
+      <span><i style="background:#1F78D1"></i>car</span><span><i style="background:#8E44C9"></i>truck</span><span><i style="background:#E8C000"></i>bus</span><span><i style="background:#00B5C8"></i>construction</span><span><i style="background:#C9CED4"></i>other obstacle</span><span><i style="background:#212529"></i>ego</span><span><i style="background:#F08C00"></i>added by the layer</span><span><i class="sw kept"></i>footprint kept</span><span><i class="sw lost"></i>footprint lost</span>
+    </div>
+    <div class="tools" id="frames" role="group" aria-label="Example frame" style="margin-top:16px"></div>
+    <p class="frame-note" id="frame-note"></p>
+  </figure>
+  <p class="teaser-caption">Each panel is the model's own 3D occupancy (0.4 m voxels) for one held-out nuScenes frame. SWTC sees cameras; DOME and COME get the true occupancy up to now. Outlines mark the true future footprint of each perceived moving vehicle.</p>
+
+  <p class="link-row"><span class="soon">Paper<em>coming soon</em></span><span class="soon">Code<em>coming soon</em></span></p>
+
+  <figure class="overview">
+    <div class="ov-grid">
+      <figure class="ov-cell">
+        <div class="ov-head">Perceived</div>
+        <div class="ov-visual"><img src="assets/occ/c6b4dc34_come_0.jpg" alt="COME's occupancy now: the overtaking car is present" style="width:100%;height:100%;object-fit:cover"></div>
+        <figcaption>Each model has the moving car in its map now.</figcaption>
+      </figure>
+      <figure class="ov-cell">
+        <div class="ov-head">Deleted</div>
+        <div class="ov-visual"><img src="assets/occ/c6b4dc34_come_3.jpg" alt="COME's occupancy at +3 s: the car is gone from its true footprint" style="width:100%;height:100%;object-fit:cover"></div>
+        <figcaption id="ov-del"></figcaption>
+      </figure>
+      <figure class="ov-cell">
+        <div class="ov-head">The cause</div>
+        <div class="ov-visual"><svg id="ov-cause" role="img" aria-label="Deleted agents are placed correctly by the forecast far less often than by detector motion"></svg></div>
+        <figcaption>The deleted agents are the ones the model cannot place.</figcaption>
+      </figure>
+      <figure class="ov-cell">
+        <div class="ov-head">Kept</div>
+        <div class="ov-visual"><img src="assets/occ/c6b4dc34_come_L.jpg" alt="COME at +3 s with the permanence layer: the car is kept" style="width:100%;height:100%;object-fit:cover"></div>
+        <figcaption>A training-free permanence layer keeps them.</figcaption>
+      </figure>
+    </div>
+    <figcaption class="caption"><strong>What this work measures.</strong> World models are asked to veto unsafe plans by imagining the future. We test whether the agents they have just perceived survive in that future, find out why they do not, build a measure that cannot be gamed, and give a reference fix.</figcaption>
+  </figure>
+
+  <h2 class="tagline" id="abstract">Abstract</h2>
+  <div class="section">
+    <p>Driving world models are increasingly used to <i>judge</i> actions: a planner's candidate paths are rolled out in an imagined 4D future and vetoed if they collide. We test a minimal requirement for such a judge, that an agent it has just perceived does not disappear from the future it imagines. Three pretrained 4D occupancy world models from different families (camera-based trajectory-conditioned, latent diffusion, deterministic forecasting) fail it: on held-out nuScenes scenes, 59–79% of the moving vehicles they perceive are no longer covered by their imagined occupancy 3 s later, including vehicles that remain clearly visible. The deleted agents are the ones the model cannot forecast: for them, even an oracle choice among the model's own predicted blobs is placed correctly for only 12–17%, against 35–40% for the motion predicted by a camera detector.</p>
+    <p>Measuring this needs care: probability-weighted and any-cell permanence metrics are won by a blank uniform map or by scattered dots, so we propose a footprint-coverage versus false-area frontier that resists both. A training-free permanence layer that keeps every perceived agent as an object reduces deleted agents by 13.5, 15.5 and 6.6 points at equal false area in a pre-registered held-out test on all three models. For decisions, a physics safety check on the same detections, given the same at-fault rule, remains as good or better except at the rarest veto rates: permanence is necessary, not sufficient. Every main result survived two from-scratch re-implementations that import no analysis code, which also overturned several of our own earlier claims.</p>
+  </div>
+
+  <h2 class="tagline" id="diagnosis">Seen, then deleted</h2>
+  <div class="section">
+    <p>A vehicle moving faster than 1 m/s within 40 m counts as <i>perceived</i> if the model's current map has mean vehicle probability of at least 0.3 in its box. It is <i>kept</i> if at least half of its true footprint 3 s later has probability of at least 0.2, and <i>lost</i> otherwise. On held-out scenes the frozen models lose most of the moving vehicles they perceive.</p>
+  </div>
+  <figure class="fig">
+    <div class="tools" id="lost-tools" role="group" aria-label="Which vehicles">
+      <button class="tbtn" type="button" data-k="lost" aria-pressed="true">All perceived</button>
+      <button class="tbtn" type="button" data-k="visible" aria-pressed="false">Still clearly visible</button>
+      <button class="tbtn" type="button" data-k="anycell" aria-pressed="false">Lenient any-cell rule</button>
+    </div>
+    <div class="chart" id="lost"></div>
+    <figcaption id="lost-cap"><strong>Perceived moving vehicles lost by +3 s</strong> (held-out fold B).</figcaption>
+  </figure>
+  <div class="facts">
+    <div class="fact"><b>57–77%</b><span>lost among vehicles still clearly visible at +3 s (at least 60% visible, 5 lidar points). It is not occlusion.</span></div>
+    <div class="fact"><b>4.6%</b><span>lost when the true future goes through DOME's own autoencoder. It is not the latent representation.</span></div>
+    <div class="fact"><b>50–72%</b><span>already lost at +2 s, and 54–81% across stricter perception, faster or nearer agents and other truth definitions.</span></div>
+  </div>
+  <div class="subtagline">Two ways to delete</div>
+  <figure class="fig">
+    <div class="chart" id="mass"></div>
+    <figcaption><strong>Total imagined vehicle probability, relative to the true vehicle area.</strong> SWTC keeps its total constant but lets it drift off the agents; DOME and COME lose it outright, 20% and 35% by +3 s.</figcaption>
+  </figure>
+
+  <h2 class="tagline" id="cause">The deleted agents are the ones the model cannot forecast</h2>
+  <div class="section">
+    <p>If the model knew where a deleted car went but failed to keep it, its forecast should still hold the location. It does not, even when we give it every advantage: among all blobs of its +3 s forecast within the agent's reachable disc we pick the one <i>closest to the truth</i>. Per-cell occupancy has no notion of an agent, so a car that may be in many places becomes faint probability everywhere and, at any useful threshold, nothing anywhere.</p>
+  </div>
+  <figure class="fig">
+    <div class="tools" id="fold-tools" role="group" aria-label="Fold">
+      <button class="tbtn" type="button" data-f="1" aria-pressed="true">Held-out fold B</button>
+      <button class="tbtn" type="button" data-f="0" aria-pressed="false">Development fold A</button>
+    </div>
+    <div class="legend"><span><i class="sw model"></i>forecast, oracle blob</span><span><i class="sw layer"></i>detector motion</span><span>hover for values</span></div>
+    <div class="chart" id="cause-chart"></div>
+    <figcaption><strong>Agents placed inside their true box at +3 s.</strong> For deleted agents the oracle blob lands in the box for only 12–17% (fold B), the camera detector's motion prediction for 35–40%. For kept agents DOME's and COME's forecasts beat the detector; SWTC's does not.</figcaption>
+  </figure>
+
+  <h2 class="tagline" id="measure">A permanence measure that cannot be gamed</h2>
+  <div class="section">
+    <p>Two natural measures reward maps that carry no information. Summed probability (“false mass”) rewards spreading: a blank map with p = 0.004 everywhere loses <i>no</i> car at frozen SWTC's false mass. “Kept if any cell in the box is above τ” rewards sparse dots: a dot lattice around moving detections beats frozen SWTC by 19 points. We count a vehicle as kept only if its footprint is covered, and count as false alarm the area above τ farther than d from every true vehicle. Both axes are invariant to any monotone recalibration.</p>
+  </div>
+  <figure class="fig">
+    <div class="tools" id="game-tools" role="group" aria-label="Measure">
+      <button class="tbtn" type="button" data-g="0" aria-pressed="false">Any cell, d = 0.4 m</button>
+      <button class="tbtn" type="button" data-g="1" aria-pressed="false">Coverage, d = 3 m</button>
+      <button class="tbtn" type="button" data-g="2" aria-pressed="true">Coverage, d = 0.4 m</button>
+    </div>
+    <div class="legend"><span><i class="sw stone"></i>map with no new information</span><span><i class="sw layer"></i>informative fix</span><span>left of 0: fewer vehicles lost than frozen SWTC</span></div>
+    <div class="chart" id="game"></div>
+    <figcaption><strong>Change in lost vehicles against frozen SWTC, at its false area</strong> (fold B, points). Under the any-cell rule a dot lattice looks like the best fix; under footprint coverage at d = 0.4 m it is 15 points worse, and blurring or a rigid “nothing moves” carry gain nothing.</figcaption>
+  </figure>
+
+  <h2 class="tagline" id="fix">Fix: never let a perceived agent vanish</h2>
+  <div class="section">
+    <p>Since the deleted agents are those the world model cannot place, the fix must not rely on it to place them. The <b>permanence layer</b> keeps every moving vehicle that the camera detector (SparseDrive) reports now, places it at the detector's most likely motion at each horizon, renders its box into the imagined future and takes the cellwise maximum with the world model's map. It is training-free and needs no access to the model's internals. Both parts are needed: the detected boxes alone lose 73% of SWTC's perceived vehicles, more than the world model.</p>
+  </div>
+  <figure class="fig">
+    <div class="legend"><span><i class="sw model"></i>frozen world model</span><span><i class="sw layer"></i>+ permanence layer</span><span>pre-registered test A11 · Bonferroni 95% CI</span></div>
+    <div class="chart" id="layer"></div>
+    <figcaption><strong>Lost at the frozen model's false area</strong> (held-out fold B, +3 s, d = 3 m as registered). Supported on all three models. Perceived moving vehicles: 3,077 (SWTC), 3,502–3,503 (DOME, COME).</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="chart-title">The gain holds across variants (d = 0.4 m)</div>
+    <div class="legend"><span><i class="sw model dot" style="border-radius:50%"></i>SWTC</span><span><i class="sw layer" style="border-radius:50%"></i>DOME</span><span><i class="sw" style="border-radius:50%;background:var(--causal)"></i>COME</span></div>
+    <div class="chart" id="robust"></div>
+    <figcaption>Change in lost at equal false area, in points. The layer cannot reach half the false-area budget for DOME and COME, since it cannot go below its own boxes. A re-implementation from the raw detector output matches to 0.1 points.</figcaption>
+  </figure>
+  <div class="section">
+    <p>Learned alternatives also help. A transport readout trained on fold A, which fuses the forecast with the transported current map, gains 14.9, 13.2 and 3.9 points but needs the forecast. Fine-tuning SWTC on Occ3D targets gains 11 to 17 points on held-out drives, but retrains the world model and worsened its ranking of dangers. The layer fails where the detector misses an agent or mispredicts its motion; the failure case in the viewer above shows this.</p>
+  </div>
+
+  <h2 class="tagline" id="decisions">Decisions: physics is a strong baseline</h2>
+  <div class="section">
+    <p>We compare the world model as a collision checker with physics (constant velocity on the same detections) at matched false-veto rates on real safe paths, with the label's at-fault rule (NAVSIM-style: ignore contact while stopped or from behind) applied to <i>both</i> checkers.</p>
+  </div>
+  <div class="facts">
+    <div class="fact"><b>57–80%</b><span>of real at-fault collisions caught by physics at 1–5% of safe paths vetoed. The world model: 51–78%.</span></div>
+    <div class="fact"><b>0.25–0.5%</b><span>veto rates are the only place the world model leads, and only on real collisions, not attacker ones.</span></div>
+    <div class="fact"><b>84%</b><span>of the attackers that SWTC deleted end more than 2 m from their constant-velocity path: a change of intent no checker foresees.</span></div>
+  </div>
+  <div class="section">
+    <p>Adding the permanence layer to the verifier does not change this (A12, not supported). Our pre-registered A13 found a large gain from giving the world model part of a 1% budget, but it was registered against physics <i>without</i> the at-fault rule; with the rule on both sides the gain disappears. The detector misses the object that is hit in 9–30% of real and 33–54% of attacker collisions, where occupancy is the only safeguard. Permanence is necessary, not sufficient.</p>
+  </div>
+  <ol class="takeaways">
+    <li><span>Report permanence as footprint coverage against false area, not as summed probability or any-cell hits.</span></li>
+    <li><span>Compare world-model verifiers with a physics check under the same at-fault rule.</span></li>
+    <li><span>Carry perceived agents as objects, not only as cells.</span></li>
+  </ol>
+
+  <h2 class="tagline" id="registered">Every registered test</h2>
+  <div class="section">
+    <p>Each confirmatory test was committed with the hashes of its code before its held-out outputs were computed. We list all of them, including those that failed or were superseded. Two from-scratch re-implementations that import no analysis code re-derived every number; the first found that our earlier axis, summed false mass, is won by a blank map, and we retracted the claims built on it.</p>
+  </div>
+  <div class="table-wrap">
+    <table class="check" id="prereg"><thead><tr><th>Test</th><th>Endpoint</th><th>Estimate [95% CI]</th><th>Verdict</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <h2 class="tagline" id="method">Method</h2>
+  <p class="counts"><span><b>3</b> world-model families</span><span><b>~3,000–3,500</b> perceived moving vehicles per model</span><span><b>149</b> held-out scenes in two folds</span><span><b>156</b> attack scenes</span></p>
+  <dl class="spec">
+    <dt>Models</dt><dd>SparseWorld-TC (SWTC): 200 × 200 × 16 occupancy at 0.4 m, +1/2/3 s from six cameras, conditioned on the ego path. DOME (latent diffusion) and the scene-centric forecasting branch of COME (deterministic UNet) receive four ground-truth Occ3D frames, so what they lose is lost by prediction alone. Official checkpoints.</dd>
+    <dt>Data</dt><dd>nuScenes validation, split by source scene into folds A (75) and B (74); everything is developed on fold A. Adv-nuSc adds 156 attack scenes for decisions, where Impromptu-VLA proposes 16 trajectories per keyframe.</dd>
+    <dt>Measure</dt><dd>Lost at threshold τ against false area(τ), the cells above τ farther than d from any true vehicle; methods are compared by lost at the frozen model's false area at τ = 0.2, with a scene-cluster bootstrap that re-matches the threshold in every resample. Collision checks are top-down, taking each voxel column's maximum vehicle probability over car height.</dd>
+    <dt>Layer</dt><dd>SparseDrive detections (score ≥ 0.3, ≥ 1 m/s; nuScenes-train checkpoint, run online), box along the detected velocity at the highest-scoring of six motion modes, rendered into each horizon and fused by a cellwise maximum.</dd>
+    <dt>Audits</dt><dd>Two from-scratch re-implementations rebuilt every result from raw nuScenes, Occ3D, model outputs and detector files. The 3D outputs shown here were regenerated and match the evaluated ones (top-down IoU 1.000).</dd>
+  </dl>
+
+  <h2 class="tagline" id="citation">Citation</h2>
+  <div class="bib">
+    <pre id="bibtex">@misc{apage2026seen,
+  title  = {Seen, Then Deleted: 4D Occupancy World Models Erase
+            the Agents They Cannot Forecast},
+  author = {Apage, Sahil and Abhilash, Medhansh and Tagore, Kartik},
+  year   = {2026}
+}</pre>
+    <button class="tbtn" type="button" id="copybib">Copy</button>
+  </div>
+
+  <div class="end">
+    <p>Seen, then deleted.</p>
+    <small>Sahil Apage · Medhansh Abhilash · Kartik Tagore · VJTI Mumbai</small>
+  </div>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+<script type="application/json" id="data">{"models":["SWTC","DOME","COME"],"inputs":["cameras","GT occupancy","GT occupancy"],"lost":[59.3,79.4,71.4],"anycell":[24.5,50.9,41.3],"visible":[56.8,77.0,69.8],"mass":[[1.57,1.58],[0.93,0.75],[0.94,0.61]],"layer":[45.8,63.9,64.8],"delta":[[-13.5,-17.1,-10.2],[-15.5,-19.6,-11.8],[-6.6,-12.7,-0.3]],"n_perceived":["3,077","3,502","3,503"],"lost_foldA":[59,78,75],"cause":{"deleted_blob":[[0.094,0.116],[0.126,0.135],[0.134,0.174]],"deleted_det":[[0.371,0.351],[0.403,0.389],[0.391,0.404]],"kept_blob":[[0.349,0.425],[0.825,0.87],[0.76,0.809]],"kept_det":[[0.513,0.581],[0.54,0.654],[0.548,0.578]]},"gaming":[["dot lattice around moving detections",false,-19.3,null,14.8],["Gaussian blur σ = 1.6 m",false,11.3,-6.8,-0.4],["max-filter dilation 2 m",false,12.4,-5.1,0.0],["rigid carry, “nothing moves”",false,-1.0,0.2,-0.3],["permanence layer",true,-10.5,-13.5,-13.5],["transport readout",true,-2.1,-15.7,-14.9]],"robust":[["base",-13.5,-15.7,-7.9],["perception ≥ 0.5",-13.6,-15.5,-7.7],["speed > 3 m/s",-14.0,-17.2,-11.6],["within 25 m",-13.7,-18.8,-10.1],["at +2 s",-17.7,-20.2,-9.1],["twice the false-area budget",-9.4,-15.5,-9.4],["any-cell criterion",-10.5,-20.4,-14.1],["fold A",-14.2,-14.6,-8.9]],"prereg":[["H1","adversary vs. matched ordinary recall","−0.06 [−0.23, 0.05]","not supported"],["H2","lateral motion → recall (per m)","−0.72 [−0.86, −0.58]","supported"],["H3","permanence + conformal, adversarial recall","+0.05 [−0.07, 0.17]","not supported"],["H4","adversarial vs. masked fine-tuning","–","not run (stop rule)"],["A1","permanence guard, adversarial collision","−0.12 pts [−0.56, 0.33]","not supported"],["A2","early-stopped readout, attacker recall","+0.04","not supported"],["A3","×10 loss weight, lost vs. control","−0.038 [−0.051, −0.027]","supported (2.6× false mass)"],["A4","SWTC ∪ readout, real AUPRC vs. constant velocity","+0.30 [+0.18, +0.40]","supported"],["A5","relabelled loss, lost vs. control","−0.026 [−0.035, −0.018]","supported"],["A7","relabelled loss, adversarial collision","−0.5 pts [−1.2, 0.0]","non-inferior"],["A8","readout on DOME, lost at equal false mass","−0.259 [−0.323, −0.205]","superseded (gameable endpoint)"],["A9","swap (train B, test A): SWTC / DOME","−0.045 / −0.249","superseded (gameable endpoint)"],["A10","map-aware readout, lateral lost","−0.016 / −0.066","not supported"],["A11","permanence layer, lost at equal false area: SWTC","−0.135 [−0.171, −0.102]","supported"],["","DOME","−0.155 [−0.196, −0.118]","supported"],["","COME","−0.066 [−0.127, −0.003]","supported"],["A12","layer in the verifier, AUPRC real / adversarial vs. SWTC","−0.223 / +0.010","not supported"],["A13","split veto at 1% false vetoes, real recall vs. physics","+0.320 [+0.108, +0.428]","superseded (at-fault rule)"],["","attacker recall vs. physics","+0.054 [−0.073, +0.183]","not supported"]],"frames":[{"id":"c6b4dc34","name":"Overtaking car","note":"All three perceive the car overtaking on the ego's left at 8.7 m/s. By +3 s none has it on its true footprint: SWTC has turned the road into static structure, DOME leaves the car behind, COME drops it. The layer keeps it for all three. It also shows the layer's limit: DOME loses the car on the right, and the detector's mispredicted motion puts the layer's box behind it, so it stays red."},{"id":"e4cd9dab","name":"Dense traffic","scene":"scene-0564","note":"Lost at +3 s / restored by the layer: SWTC 6 of 10 / 3, DOME 8 of 10 / 3, COME 5 of 10 / 3."},{"id":"4144d6c9","name":"A failure case","scene":"scene-0794","note":"The ego is stopped. Lost / restored: SWTC 4 of 4 / 0, DOME 9 of 9 / 0, COME 7 of 9 / 0. Of DOME's nine, the detector misses five, reports one slow car (1.4 m/s) as stationary, and places the other three off their true footprints. The layer can only keep what perception provides."}]}</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const C = { ink: '#1b1b1b', ink2: '#444444', ink3: '#737373', grid: '#ececec', model: '#3d3a35', layer: '#d9480f', layerSoft: '#f6d6c5', lost: '#e03131', kept: '#2f9e44', stone: '#c9c3b6', come: '#2c5b94', well: '#f6f6f4', page: '#ffffff' };
+  const MONO = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
+  const NS = 'http://www.w3.org/2000/svg';
+  const minus = s => String(s).replace(/-/g, '−');
+  const sg = v => (v > 0 ? '+' : '') + minus(v.toFixed(1));
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function el(tag, a, p) { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+  function tx(p, x, y, s, a) { const e = el('text', Object.assign({ x, y, 'font-family': MONO, 'font-size': 11, fill: C.ink3, stroke: C.page, 'stroke-width': 3, 'stroke-linejoin': 'round', 'paint-order': 'stroke' }, a || {}), p); e.textContent = s; return e; }
+  function lin(d0, d1, r0, r1) { return v => r0 + (v - d0) / (d1 - d0) * (r1 - r0); }
+  function svgIn(host, w, h, label) { host.innerHTML = ''; return el('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}`, role: 'img', 'aria-label': label }, host); }
+  const tip = document.getElementById('tip');
+  function hover(node, html) {
+    node.addEventListener('pointerenter', e => { tip.innerHTML = html; tip.style.opacity = 1; move(e); });
+    node.addEventListener('pointermove', move);
+    node.addEventListener('pointerleave', () => { tip.style.opacity = 0; });
+  }
+  function move(e) {
+    const w = tip.offsetWidth, h = tip.offsetHeight; let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + w > innerWidth - 8) x = e.clientX - w - 14; if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function pressGroup(id, attr, cb) {
+    const bs = [...document.querySelectorAll('#' + id + ' .tbtn')];
+    bs.forEach(b => b.addEventListener('click', () => { bs.forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false')); cb(b.dataset[attr]); }));
+  }
+  const M = D.models;
+
+  /* ---------- occupancy viewer ---------- */
+  const STEPS = [['0', 'now'], ['1', '+1 s'], ['2', '+2 s'], ['3', '+3 s'], ['L', '+3 s + layer']];
+  const ROWS = [['gt', 'Ground truth', 'what happened'], ['swtc', 'SWTC', 'from cameras'], ['dome', 'DOME', 'diffusion'], ['come', 'COME', 'deterministic']];
+  let frame = D.frames[0], step = 0, playing = !reduce, timer = null;
+  const occ = document.getElementById('occ'), tl = document.getElementById('timeline');
+  function buildOcc() {
+    occ.innerHTML = '';
+    ROWS.forEach(([k, name, sub]) => {
+      const f = document.createElement('figure');
+      f.innerHTML = `<figcaption>${name}<span>${sub}</span></figcaption><div class="frame"></div>`;
+      const fr = f.querySelector('.frame');
+      STEPS.forEach(([s, lab], i) => {
+        const im = document.createElement('img');
+        const src = k === 'gt' && s === 'L' ? '3' : s;
+        im.src = `assets/occ/${frame.id}_${k}_${src}.jpg`; im.alt = `${name}, ${lab}`; im.dataset.i = i; im.decoding = 'async';
+        fr.appendChild(im);
+      });
+      occ.appendChild(f);
+    });
+    showStep(step);
+    const sc = frame.scene ? ` (held-out ${frame.scene})` : '';
+    document.getElementById('frame-note').textContent = frame.name + sc + '. ' + frame.note;
+  }
+  function showStep(i) {
+    step = i;
+    occ.querySelectorAll('img').forEach(im => im.classList.toggle('on', +im.dataset.i === i));
+    tl.querySelectorAll('.tbtn[data-i]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.i === i ? 'true' : 'false'));
+  }
+  STEPS.forEach(([s, lab], i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tbtn' + (s === 'L' ? ' layerbtn' : ''); b.dataset.i = i; b.textContent = lab;
+    b.addEventListener('click', () => { setPlay(false); showStep(i); });
+    tl.appendChild(b);
+  });
+  const pb = document.createElement('button'); pb.type = 'button'; pb.className = 'tbtn'; pb.style.marginLeft = '10px';
+  pb.addEventListener('click', () => setPlay(!playing)); tl.appendChild(pb);
+  function setPlay(p) {
+    playing = p; pb.textContent = p ? 'Pause' : 'Play'; clearInterval(timer);
+    if (p) timer = setInterval(() => showStep((step + 1) % STEPS.length), 1300);
+  }
+  const fh = document.getElementById('frames');
+  D.frames.forEach((f, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tbtn'; b.textContent = f.name; b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    b.addEventListener('click', () => { fh.querySelectorAll('.tbtn').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false')); frame = f; buildOcc(); });
+    fh.appendChild(b);
+  });
+  buildOcc(); setPlay(playing);
+  new IntersectionObserver(es => es.forEach(e => { if (playing) { clearInterval(timer); if (e.isIntersecting) timer = setInterval(() => showStep((step + 1) % STEPS.length), 1300); } }), { threshold: 0.1 }).observe(occ);
+
+  document.getElementById('ov-del').textContent = `By +3 s, ${Math.round(Math.min(...D.lost))}–${Math.round(Math.max(...D.lost))}% are gone from their true footprint.`;
+  (function () {
+    const s = document.getElementById('ov-cause'); s.setAttribute('viewBox', '0 0 240 180');
+    el('rect', { x: 0, y: 0, width: 240, height: 180, fill: C.well }, s);
+    const y = lin(0, 0.5, 148, 30), blob = D.cause.deleted_blob.map(v => v[1]), det = D.cause.deleted_det.map(v => v[1]);
+    M.forEach((m, i) => {
+      const cx = 50 + i * 70;
+      el('rect', { x: cx - 18, y: y(blob[i]), width: 16, height: y(0) - y(blob[i]), fill: C.model }, s);
+      el('rect', { x: cx + 2, y: y(det[i]), width: 16, height: y(0) - y(det[i]), fill: C.layer }, s);
+      tx(s, cx, 164, m, { 'text-anchor': 'middle', 'font-size': 10, stroke: C.well });
+    });
+    el('line', { x1: 20, x2: 225, y1: y(0), y2: y(0), stroke: C.ink }, s);
+    tx(s, 22, 20, 'deleted agents placed in box', { 'font-size': 9.5, stroke: C.well });
+  })();
+
+  /* ---------- lost bars ---------- */
+  let lostKey = 'lost';
+  const LOSTCAP = { lost: 'All perceived moving vehicles; the lenient and visible-only views are toggles above.', visible: 'Only vehicles still at least 60% visible with 5 or more lidar points at +3 s (82–88% of them). It is not occlusion.', anycell: 'Kept if any single cell of the footprint is above τ. Even under this lenient rule 25–51% are lost.' };
+  function drawLost() {
+    const host = document.getElementById('lost'), W = host.clientWidth, H = 230, L = 130, R = 50, T = 8, rowH = (H - T - 30) / 3;
+    const sv = svgIn(host, W, H, 'Share of perceived moving vehicles lost by +3 s');
+    const x = lin(0, 100, L, W - R);
+    [0, 25, 50, 75, 100].forEach(v => { el('line', { x1: x(v), x2: x(v), y1: T, y2: H - 30, stroke: v ? C.grid : C.ink }, sv); tx(sv, x(v), H - 12, v + '%', { 'text-anchor': 'middle' }); });
+    M.forEach((m, i) => {
+      const v = D[lostKey][i], yy = T + i * rowH + rowH / 2, g = el('g', {}, sv);
+      el('rect', { x: x(0), y: yy - 13, width: x(v) - x(0), height: 26, fill: C.lost, 'fill-opacity': .85 }, g);
+      tx(sv, x(v) + 6, yy + 4, v.toFixed(1) + '%', { fill: C.ink, 'font-size': 12 });
+      tx(sv, L - 10, yy, m, { 'text-anchor': 'end', fill: C.ink, 'font-size': 12 });
+      tx(sv, L - 10, yy + 14, D.inputs[i], { 'text-anchor': 'end', 'font-size': 10 });
+      el('rect', { x: L, y: yy - rowH / 2, width: W - L - R, height: rowH, fill: 'transparent' }, g);
+      hover(g, `<b>${m}</b> (${D.inputs[i]})<br>lost ${D.lost[i]}% · visible only ${D.visible[i]}% · any-cell ${D.anycell[i]}%<br>fold A: ${D.lost_foldA[i]}%`);
+    });
+    document.getElementById('lost-cap').innerHTML = '<strong>Perceived moving vehicles lost by +3 s</strong> (held-out fold B, τ = 0.2). ' + LOSTCAP[lostKey];
+  }
+  pressGroup('lost-tools', 'k', k => { lostKey = k; drawLost(); });
+
+  function drawMass() {
+    const host = document.getElementById('mass'), W = host.clientWidth, H = 170, L = 130, R = 60, T = 22;
+    const sv = svgIn(host, W, H, 'Imagined vehicle mass now and at +3 s');
+    const x = lin(0, 1.8, L, W - R), rowH = (H - T - 26) / 3;
+    [0, 0.5, 1, 1.5].forEach(v => { el('line', { x1: x(v), x2: x(v), y1: T, y2: H - 26, stroke: v === 1 ? C.ink3 : C.grid, 'stroke-dasharray': v === 1 ? '4 3' : '' }, sv); tx(sv, x(v), H - 8, v.toFixed(1), { 'text-anchor': 'middle' }); });
+    tx(sv, x(1) + 4, T - 8, '1 = true vehicle area', { 'font-size': 10 });
+    M.forEach((m, i) => {
+      const [a, b] = D.mass[i], yy = T + i * rowH + rowH / 2, g = el('g', {}, sv);
+      el('line', { x1: x(a), x2: x(b), y1: yy, y2: yy, stroke: C.stone, 'stroke-width': 3 }, g);
+      el('circle', { cx: x(a), cy: yy, r: 6, fill: C.page, stroke: C.model, 'stroke-width': 2 }, g);
+      el('circle', { cx: x(b), cy: yy, r: 6, fill: C.lost }, g);
+      tx(sv, L - 10, yy + 4, m, { 'text-anchor': 'end', fill: C.ink, 'font-size': 12 });
+      tx(sv, Math.max(x(a), x(b)) + 12, yy + 4, `${a.toFixed(2)} → ${b.toFixed(2)}`, { fill: C.ink2 });
+      el('rect', { x: L, y: yy - rowH / 2, width: W - L - R, height: rowH, fill: 'transparent' }, g);
+      hover(g, `<b>${m}</b><br>now ${a.toFixed(2)} → +3 s ${b.toFixed(2)}`);
+    });
+    const lg = el('g', {}, sv);
+    el('circle', { cx: L + 6, cy: 8, r: 5, fill: C.page, stroke: C.model, 'stroke-width': 2 }, lg); tx(lg, L + 16, 12, 'now', { fill: C.ink2 });
+    el('circle', { cx: L + 66, cy: 8, r: 5, fill: C.lost }, lg); tx(lg, L + 76, 12, '+3 s', { fill: C.ink2 });
+  }
+
+  /* ---------- cause ---------- */
+  let fold = 1;
+  function drawCause() {
+    const host = document.getElementById('cause-chart'), W = host.clientWidth, narrow = W < 600, H = 250, L = 46, R = 10, T = 30, B = 44;
+    const sv = svgIn(host, W, H, 'Share of agents placed in their true box');
+    const y = lin(0, 1, H - B, T);
+    [0, .25, .5, .75, 1].forEach(v => { el('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: v ? C.grid : C.ink }, sv); tx(sv, L - 6, y(v) + 4, Math.round(100 * v) + '%', { 'text-anchor': 'end' }); });
+    const half = (W - L - R) / 2;
+    [['deleted', 'deleted agents'], ['kept', 'kept agents']].forEach(([grp, lab], gi) => {
+      const x0 = L + gi * half, bw = half / 3;
+      tx(sv, x0 + half / 2, 16, lab, { 'text-anchor': 'middle', fill: C.ink, 'font-size': 12 });
+      if (gi) el('line', { x1: x0, x2: x0, y1: T - 6, y2: H - B, stroke: C.rule || '#e6e2d8' }, sv);
+      M.forEach((m, i) => {
+        const cx = x0 + bw * (i + .5), w = Math.min(26, bw * .32);
+        [['blob', C.model, -1, 'forecast, oracle blob'], ['det', C.layer, 1, 'detector motion']].forEach(([k, col, side, l]) => {
+          const v = D.cause[grp + '_' + k][i][fold], xx = cx + (side < 0 ? -w - 1 : 1), g = el('g', {}, sv);
+          el('rect', { x: xx, y: y(v), width: w, height: y(0) - y(v), fill: col }, g);
+          if (!narrow) tx(sv, xx + w / 2, y(v) - 5, Math.round(100 * v) + '', { 'text-anchor': 'middle', fill: C.ink, 'font-size': 10 });
+          el('rect', { x: xx - 1, y: T, width: w + 2, height: H - B - T, fill: 'transparent' }, g);
+          hover(g, `<b>${m}</b>, ${lab}<br>${l}: ${(100 * v).toFixed(1)}% in the true box<br>fold ${fold ? 'B' : 'A'}`);
+        });
+        tx(sv, cx, H - B + 17, m, { 'text-anchor': 'middle', fill: C.ink, 'font-size': narrow ? 10 : 11 });
+      });
+    });
+  }
+  pressGroup('fold-tools', 'f', f => { fold = +f; drawCause(); });
+
+  /* ---------- gameable measures ---------- */
+  let gm = 2;
+  function drawGame() {
+    const host = document.getElementById('game'), W = host.clientWidth, narrow = W < 600, rowH = 32, T = 10;
+    const rows = D.gaming, L = narrow ? 150 : 270, R = 54, H = T + rows.length * rowH + 30;
+    const sv = svgIn(host, W, H, 'Change in lost vehicles for informative and uninformative maps');
+    const x = lin(-22, 18, L, W - R);
+    [-20, -10, 0, 10].forEach(v => { el('line', { x1: x(v), x2: x(v), y1: T, y2: H - 26, stroke: v ? C.grid : C.ink }, sv); tx(sv, x(v), H - 8, sg(v).replace('+0.0', '0'), { 'text-anchor': 'middle' }); });
+    rows.forEach((r, i) => {
+      const v = r[2 + gm], yy = T + i * rowH + rowH / 2, g = el('g', {}, sv);
+      const lab = narrow ? r[0].replace(' around moving detections', '').replace('Gaussian ', '').replace(' σ = 1.6 m', '').replace('max-filter ', '') : r[0];
+      tx(sv, L - 10, yy + 4, lab, { 'text-anchor': 'end', fill: r[1] ? C.ink : C.ink2, 'font-size': narrow ? 10 : 12 });
+      if (v == null) { tx(sv, x(0) + 6, yy + 4, 'never reaches the reference false area', { 'font-size': 10 }); }
+      else {
+        const col = r[1] ? C.layer : C.stone;
+        el('rect', { x: Math.min(x(0), x(v)), y: yy - 9, width: Math.max(2, Math.abs(x(v) - x(0))), height: 18, fill: col }, g);
+        tx(sv, v < 0 ? x(v) - 6 : x(v) + 6, yy + 4, sg(v), { 'text-anchor': v < 0 ? 'end' : 'start', fill: C.ink, 'font-size': 11 });
+      }
+      el('rect', { x: L, y: yy - rowH / 2, width: W - L, height: rowH, fill: 'transparent' }, g);
+      hover(g, `<b>${r[0]}</b><br>any-cell, d 0.4 m: ${r[2] == null ? 'n/a' : sg(r[2])}<br>coverage, d 3 m: ${r[3] == null ? 'n/a' : sg(r[3])}<br>coverage, d 0.4 m: ${r[4] == null ? 'n/a' : sg(r[4])}`);
+    });
+  }
+  pressGroup('game-tools', 'g', g => { gm = +g; drawGame(); });
+
+  /* ---------- layer ---------- */
+  function drawLayer() {
+    const host = document.getElementById('layer'), W = host.clientWidth, H = 200, L = 130, R = 150, T = 10, rowH = (H - T - 30) / 3;
+    const sv = svgIn(host, W, H, 'Lost vehicles, frozen against with the permanence layer');
+    const x = lin(30, 90, L, W - R);
+    [30, 45, 60, 75, 90].forEach(v => { el('line', { x1: x(v), x2: x(v), y1: T, y2: H - 30, stroke: C.grid }, sv); tx(sv, x(v), H - 12, v + '%', { 'text-anchor': 'middle' }); });
+    M.forEach((m, i) => {
+      const a = D.lost[i], b = D.layer[i], [d, lo, hi] = D.delta[i], yy = T + i * rowH + rowH / 2, g = el('g', {}, sv);
+      el('line', { x1: x(b), x2: x(a), y1: yy, y2: yy, stroke: C.stone, 'stroke-width': 3 }, g);
+      el('circle', { cx: x(a), cy: yy, r: 7, fill: C.model }, g);
+      el('circle', { cx: x(b), cy: yy, r: 7, fill: C.layer }, g);
+      tx(sv, L - 10, yy + 4, m, { 'text-anchor': 'end', fill: C.ink, 'font-size': 12 });
+      tx(sv, W - R + 14, yy + 4, `${minus(d.toFixed(1))} pts [${minus(lo.toFixed(1))}, ${minus(hi.toFixed(1))}]`, { fill: C.ink, 'font-size': W < 520 ? 9.5 : 11 });
+      el('rect', { x: L, y: yy - rowH / 2, width: W - L, height: rowH, fill: 'transparent' }, g);
+      hover(g, `<b>${m}</b><br>frozen ${a}% → with layer ${b}%<br>Δ ${minus(d.toFixed(1))} [${minus(lo.toFixed(1))}, ${minus(hi.toFixed(1))}]`);
+    });
+  }
+  function drawRobust() {
+    const host = document.getElementById('robust'), W = host.clientWidth, narrow = W < 600, rowH = 26, T = 8;
+    const R = D.robust, L = narrow ? 130 : 200, H = T + R.length * rowH + 30;
+    const sv = svgIn(host, W, H, 'Gain of the permanence layer across variants');
+    const x = lin(-22, 0, L, W - 16), cols = [C.model, C.layer, C.come];
+    [-20, -15, -10, -5, 0].forEach(v => { el('line', { x1: x(v), x2: x(v), y1: T, y2: H - 26, stroke: v ? C.grid : C.ink }, sv); tx(sv, x(v), H - 8, minus(String(v)), { 'text-anchor': 'middle' }); });
+    R.forEach((r, i) => {
+      const yy = T + i * rowH + rowH / 2, g = el('g', {}, sv);
+      if (i % 2 === 0) el('rect', { x: L, y: yy - rowH / 2, width: W - L - 16, height: rowH, fill: C.well }, g);
+      tx(sv, L - 10, yy + 4, narrow ? r[0].replace('twice the false-area budget', '2× false area') : r[0], { 'text-anchor': 'end', fill: C.ink2, 'font-size': narrow ? 10 : 11.5 });
+      [1, 2, 3].forEach(j => el('circle', { cx: x(r[j]), cy: yy, r: 5.5, fill: cols[j - 1], stroke: C.page, 'stroke-width': 1.5 }, g));
+      el('rect', { x: L, y: yy - rowH / 2, width: W - L, height: rowH, fill: 'transparent' }, g);
+      hover(g, `<b>${r[0]}</b><br>SWTC ${minus(r[1].toFixed(1))} · DOME ${minus(r[2].toFixed(1))} · COME ${minus(r[3].toFixed(1))}`);
+    });
+  }
+
+  /* ---------- registered tests ---------- */
+  const tb = document.querySelector('#prereg tbody');
+  D.prereg.forEach(r => {
+    const tr = document.createElement('tr'); if (r[0] === 'A11' || (r[0] === '' && r[3] === 'supported')) tr.className = 'hl';
+    r.forEach(c => { const td = document.createElement('td'); td.textContent = c; tr.appendChild(td); });
+    tb.appendChild(tr);
+  });
+
+  function drawAll() { drawLost(); drawMass(); drawCause(); drawGame(); drawLayer(); drawRobust(); }
+  drawAll();
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
+
+  document.getElementById('copybib').addEventListener('click', e => {
+    const b = e.currentTarget;
+    const ok = () => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); };
+    try { navigator.clipboard.writeText(document.getElementById('bibtex').textContent).then(ok, sel); } catch (err) { sel(); }
+    function sel() { const r = document.createRange(); r.selectNodeContents(document.getElementById('bibtex')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Selected'; }
+  });
+  const links = [...document.querySelectorAll('.side-nav a')], secs = links.map(a => document.querySelector(a.getAttribute('href')));
+  addEventListener('scroll', () => {
+    let i = 0; secs.forEach((s, j) => { if (s.getBoundingClientRect().top < 140) i = j; });
+    links.forEach((a, j) => a.classList.toggle('active', j === i));
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>
