@@ -3,8 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
-<meta name="googlebot" content="noindex, nofollow">
 <style>img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Seen, Then Deleted</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -82,6 +80,8 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px s
 
 .link-row { font-family: var(--sans); font-size: 16px; text-align: center; margin: 26px 0 44px; color: var(--ink-3); display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 36px; }
 .link-row .soon { border-bottom: 1px solid var(--stone); padding-bottom: 2px; white-space: nowrap; }
+.link-row a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink); padding-bottom: 2px; white-space: nowrap; }
+.link-row a em { font-style: normal; font-family: var(--mono); font-size: 12px; margin-left: 6px; }
 .link-row .soon em { font-style: normal; font-family: var(--mono); font-size: 12px; margin-left: 6px; }
 
 /* overview strip */
@@ -235,6 +235,7 @@ table.check tr.hl td:nth-child(4) { color: var(--ink); font-weight: 500; }
   <div class="authors">
     <p class="author-list"><span class="name">Sahil Apage<sup>1</sup></span>, <span class="name">Medhansh Abhilash<sup>1</sup></span>, <span class="name">Kartik Tagore<sup>1</sup></span></p>
     <p class="affiliation-list"><sup>1</sup>Veermata Jijabai Technological Institute (VJTI), Mumbai</p>
+    <p class="affiliation-list" style="margin-top:10px">Accepted at the 1st Workshop on World Action Models for Autonomous Driving (WAM-AD), WACV 2027</p>
   </div>
 
   <figure class="fig wide" style="margin-bottom:10px">
@@ -248,7 +249,7 @@ table.check tr.hl td:nth-child(4) { color: var(--ink); font-weight: 500; }
   </figure>
   <p class="teaser-caption">Each panel is the model's own 3D occupancy (0.4 m voxels) for one held-out nuScenes frame. SWTC sees cameras; DOME and COME get the true occupancy up to now. Outlines mark the true future footprint of each perceived moving vehicle.</p>
 
-  <p class="link-row"><span class="soon">Paper<em>coming soon</em></span><span class="soon">Code<em>coming soon</em></span></p>
+  <p class="link-row"><a href="assets/Seen_Then_Deleted_WAM-AD_camera_ready.pdf">Paper<em>PDF</em></a><span class="soon">Code<em>coming soon</em></span></p>
 
   <figure class="overview">
     <div class="ov-grid">
@@ -396,7 +397,9 @@ table.check tr.hl td:nth-child(4) { color: var(--ink); font-weight: 500; }
   title  = {Seen, Then Deleted: 4D Occupancy World Models Erase
             the Agents They Cannot Forecast},
   author = {Apage, Sahil and Abhilash, Medhansh and Tagore, Kartik},
-  year   = {2026}
+  year   = {2026},
+  note   = {Accepted at the 1st Workshop on World Action Models for
+            Autonomous Driving (WAM-AD), WACV 2027}
 }</pre>
     <button class="tbtn" type="button" id="copybib">Copy</button>
   </div>
